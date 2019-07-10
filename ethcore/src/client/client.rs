@@ -2232,7 +2232,11 @@ impl IoClient for Client {
 				notify.transactions_received(&txs, peer_id);
 			});
 
-			client.importer.miner.import_external_transactions(client, txs);
+			let result = client.importer.miner.import_external_transactions(client, txs);
+
+			client.notify(|notify| {
+				notify.transactions_imported(result.as_slice(), peer_id);
+			});
 		}).unwrap_or_else(|e| {
 			debug!(target: "client", "Ignoring {} transactions: {}", len, e);
 		});

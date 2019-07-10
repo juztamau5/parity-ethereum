@@ -575,7 +575,7 @@ impl SyncHandler {
 		let warp_protocol = warp_protocol_version != 0;
 		let private_tx_protocol = warp_protocol_version >= PAR_PROTOCOL_VERSION_3.0;
 		let peer = PeerInfo {
-			protocol_version: protocol_version,
+			protocol_version,
 			network_id: r.val_at(1)?,
 			difficulty: Some(r.val_at(2)?),
 			latest_hash: r.val_at(3)?,
@@ -585,6 +585,8 @@ impl SyncHandler {
 			asking_hash: None,
 			ask_time: Instant::now(),
 			last_sent_transactions: Default::default(),
+			received_transactions_count: 0,
+			rejected_transactions_count: 0,
 			last_sent_private_transactions: Default::default(),
 			expired: false,
 			confirmation: if sync.fork_block.is_none() { ForkConfirmation::Confirmed } else { ForkConfirmation::Unconfirmed },

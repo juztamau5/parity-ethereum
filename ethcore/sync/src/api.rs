@@ -53,7 +53,7 @@ use parity_runtime::Executor;
 use std::sync::atomic::{AtomicBool, Ordering};
 use network::IpFilter;
 use private_tx::PrivateTxHandler;
-use types::transaction::UnverifiedTransaction;
+use types::transaction::{self, UnverifiedTransaction};
 
 use super::light_sync::SyncInfo;
 
@@ -639,6 +639,11 @@ impl ChainNotify for EthSync {
 	fn transactions_received(&self, txs: &[UnverifiedTransaction], peer_id: PeerId) {
 		let mut sync = self.eth_handler.sync.write();
 		sync.transactions_received(txs, peer_id);
+	}
+
+	fn transactions_imported(&self, result: &[Result<(), transaction::Error>], peer_id: PeerId) {
+		let mut sync = self.eth_handler.sync.write();
+		sync.transactions_imported(result, peer_id);
 	}
 }
 

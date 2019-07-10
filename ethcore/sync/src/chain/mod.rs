@@ -118,7 +118,7 @@ use snapshot::{Snapshot};
 use api::{EthProtocolInfo as PeerInfoDigest, WARP_SYNC_PROTOCOL_ID, PriorityTask};
 use private_tx::PrivateTxHandler;
 use transactions_stats::{TransactionsStats, Stats as TransactionStats};
-use types::transaction::UnverifiedTransaction;
+use types::transaction::{self, UnverifiedTransaction};
 use types::BlockNumber;
 
 use self::handler::SyncHandler;
@@ -316,6 +316,11 @@ pub struct PeerInfo {
 	ask_time: Instant,
 	/// Holds a set of transactions recently sent to this peer to avoid spamming.
 	last_sent_transactions: H256FastSet,
+	/// How many transactions the peer sent us.
+	received_transactions_count: usize,
+	/// How many transactions the peer sent us were rejected.
+	/// Used to disconnect from peeers that send us garbage.
+	rejected_transactions_count: usize,
 	/// Holds a set of private transactions and their signatures recently sent to this peer to avoid spamming.
 	last_sent_private_transactions: H256FastSet,
 	/// Pending request is expired and result should be ignored
@@ -744,6 +749,15 @@ impl ChainSync {
 	pub fn transactions_received(&mut self, txs: &[UnverifiedTransaction], peer_id: PeerId) {
 		if let Some(peer_info) = self.peers.get_mut(&peer_id) {
 			peer_info.last_sent_transactions.extend(txs.iter().map(|tx| tx.hash()));
+			peer_info.received_transactions_count += txs.len();
+		}
+	}
+
+	/// Updates rejected transactions stats
+	pub fn transactions_imported(&mut self, result: &[Result<(), transaction::Error>], peer_id: PeerId) {
+		if let Some(peer_info) = self.peers.get_mut(&peer_id) {
+			let errors = result.iter().filter(|r| r.is_err()).count();
+			peer_info.rejected_transactions_count += errors;
 		}
 	}
 
@@ -1220,8 +1234,23 @@ impl ChainSync {
 				PeerAsking::SnapshotManifest => elapsed > SNAPSHOT_MANIFEST_TIMEOUT,
 				PeerAsking::SnapshotData => elapsed > SNAPSHOT_DATA_TIMEOUT,
 			};
+			let received = peer.received_transactions_count;
+			let rejected = peer.rejected_transactions_count;
+			// TODO: these constants are pretty arbitrary
+			let sends_too_many_useless_txns = received > 500 &&
+				(rejected as f64 / received as f64) > 0.5;
 			if timeout {
 				debug!(target:"sync", "Timeout {}", peer_id);
+			}
+			if sends_too_many_useless_txns {
+				debug!(
+					target:"sync",
+					"Disconnecting peer {} with useless transaction ratio {}",
+					peer_id,
+					(rejected as f64 / received as f64),
+				);
+			}
+			if timeout || sends_too_many_useless_txns {
 				io.disconnect_peer(*peer_id);
 				aborting.push(*peer_id);
 			}
@@ -1515,6 +1544,8 @@ pub mod tests {
 				asking_hash: None,
 				ask_time: Instant::now(),
 				last_sent_transactions: Default::default(),
+				received_transactions_count: 0,
+				rejected_transactions_count: 0,
 				last_sent_private_transactions: Default::default(),
 				expired: false,
 				private_tx_enabled: false,

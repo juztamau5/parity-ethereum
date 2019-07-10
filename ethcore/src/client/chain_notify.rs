@@ -16,7 +16,7 @@
 
 use bytes::Bytes;
 use ethereum_types::{H256, U256};
-use types::transaction::UnverifiedTransaction;
+use types::transaction::{self, UnverifiedTransaction};
 use blockchain::ImportRoute;
 use std::time::Duration;
 use std::collections::HashMap;
@@ -184,8 +184,18 @@ pub trait ChainNotify : Send + Sync {
 	}
 
 	/// fires when new transactions are received from a peer
-	fn transactions_received(&self,
+	fn transactions_received(
+		&self,
 		_txs: &[UnverifiedTransaction],
+		_peer_id: usize,
+	) {
+		// does nothing by default
+	}
+
+	/// fires when new transactions are imported into the queue
+	fn transactions_imported(
+		&self,
+		_result: &[Result<(), transaction::Error>],
 		_peer_id: usize,
 	) {
 		// does nothing by default
