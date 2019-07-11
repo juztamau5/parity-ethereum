@@ -121,6 +121,7 @@ impl SyncPropagator {
 		let mut affected_peers = HashSet::new();
 		if !transactions.is_empty() {
 			let peers = SyncPropagator::select_peers_for_transactions(sync, |_| true);
+			debug!(target: "sync", "Propagating {} new transactions to {} peers", transactions.len(), peers.len());
 			affected_peers = SyncPropagator::propagate_transactions_to_peers(
 				sync, io, peers, transactions, &mut should_continue,
 			);
