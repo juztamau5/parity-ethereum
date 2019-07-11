@@ -438,7 +438,7 @@ mod tests {
 				asking_hash: None,
 				ask_time: Instant::now(),
 				last_sent_transactions: Default::default(),
-				received_transactions_count: 0,
+				sent_transactions_count: 0,
 				rejected_transactions_count: 0,
 				last_sent_private_transactions: Default::default(),
 				expired: false,

@@ -317,7 +317,7 @@ pub struct PeerInfo {
 	/// Holds a set of transactions recently sent to this peer to avoid spamming.
 	last_sent_transactions: H256FastSet,
 	/// How many transactions the peer sent us.
-	received_transactions_count: usize,
+	sent_transactions_count: usize,
 	/// How many transactions the peer sent us were rejected.
 	/// Used to disconnect from peeers that send us garbage.
 	rejected_transactions_count: usize,
@@ -749,7 +749,7 @@ impl ChainSync {
 	pub fn transactions_received(&mut self, txs: &[UnverifiedTransaction], peer_id: PeerId) {
 		if let Some(peer_info) = self.peers.get_mut(&peer_id) {
 			peer_info.last_sent_transactions.extend(txs.iter().map(|tx| tx.hash()));
-			peer_info.received_transactions_count += txs.len();
+			peer_info.sent_transactions_count += txs.len();
 		}
 	}
 
@@ -1234,7 +1234,7 @@ impl ChainSync {
 				PeerAsking::SnapshotManifest => elapsed > SNAPSHOT_MANIFEST_TIMEOUT,
 				PeerAsking::SnapshotData => elapsed > SNAPSHOT_DATA_TIMEOUT,
 			};
-			let received = peer.received_transactions_count;
+			let received = peer.sent_transactions_count;
 			let rejected = peer.rejected_transactions_count;
 			// TODO: these constants are pretty arbitrary
 			let sends_too_many_useless_txns = received > 500 &&
@@ -1544,7 +1544,7 @@ pub mod tests {
 				asking_hash: None,
 				ask_time: Instant::now(),
 				last_sent_transactions: Default::default(),
-				received_transactions_count: 0,
+				sent_transactions_count: 0,
 				rejected_transactions_count: 0,
 				last_sent_private_transactions: Default::default(),
 				expired: false,
