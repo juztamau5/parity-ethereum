@@ -58,7 +58,7 @@
 #![recursion_limit="128"]
 
 extern crate ansi_term;
-extern crate bn;
+extern crate substrate_bn;
 extern crate byteorder;
 extern crate common_types as types;
 extern crate crossbeam;
