@@ -199,10 +199,6 @@ impl Clique {
 
 		let res = Arc::new(engine);
 
-		if our_params.period > 0 {
-			engine.step_service = Some(StepService::start(Arc::downgrade(&res) as Weak<Engine<_>>));
-		}
-
 		Ok(res)
 	}
 
